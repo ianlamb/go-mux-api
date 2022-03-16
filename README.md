@@ -28,8 +28,33 @@ export POSTGRESQL_URL="postgres://risky:rainy2@localhost:5432/ror2?sslmode=disab
 migrate -database ${POSTGRESQL_URL} -path db/migrations up
 ```
 
+### Tidbits
+
+If you need to reset the database completely and reinitialize (eg. with a different user/pass or db name) don't forget to remove the volume:
+
+```bash
+docker container prune
+docker network prune
+docker volume prune
+docker volume rm -f go-mux-api_data
+```
+
 ## Run Locally
 
 ```bash
 docker compose up --build
+```
+
+### Tidbits
+
+Test connecting to DB by exec'ing into the container while it's running:
+
+```bash
+docker exec -it postgres psql -d ror2 -U risky
+```
+
+Test the API with cURL:
+
+```bash
+curl http://localhost:8010/items
 ```

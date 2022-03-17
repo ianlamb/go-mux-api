@@ -16,6 +16,10 @@ type App struct {
 	DB     *sql.DB
 }
 
+type GraphqlBody struct {
+	query interface{}
+}
+
 const (
 	HOST = "db"
 	PORT = 5432
@@ -47,6 +51,31 @@ func (a *App) initializeRoutes() {
 	a.Router.HandleFunc("/item/{id:[0-9]+}", a.getItem).Methods("GET")
 	a.Router.HandleFunc("/item/{id:[0-9]+}", a.updateItem).Methods("PUT")
 	a.Router.HandleFunc("/item/{id:[0-9]+}", a.deleteItem).Methods("DELETE")
+
+	// graphql
+	a.Router.HandleFunc("/graphql/item", func(w http.ResponseWriter, r *http.Request) {
+		var query string
+
+		log.Println("Content-Type: ", r.Header.Get("Content-Type"))
+		if r.Header.Get("Content-Type") == "application/json" {
+			var bodyJson map[string]interface{}
+			decoder := json.NewDecoder(r.Body)
+			if err := decoder.Decode(&bodyJson); err != nil {
+				respondWithError(w, http.StatusBadRequest, "Invalid request payload")
+				return
+			}
+			defer r.Body.Close()
+			log.Println("bodyJson: ", bodyJson)
+
+			query = bodyJson["query"].(string)
+		} else {
+			query = r.URL.Query().Get("query")
+		}
+		log.Println("Query: ", query)
+
+		result := executeQuery(query, schema, a.DB)
+		json.NewEncoder(w).Encode(result)
+	})
 }
 
 func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {

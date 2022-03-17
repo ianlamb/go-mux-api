@@ -45,7 +45,7 @@ docker volume rm -f go-mux-api_data
 docker compose up --build
 ```
 
-### Tidbits
+### Verification
 
 Test connecting to DB by exec'ing into the container while it's running:
 
@@ -57,4 +57,14 @@ Test the API with cURL:
 
 ```bash
 curl http://localhost:8010/items
+```
+
+### GraphQL
+
+This API also supports graphql queries like so:
+
+```bash
+curl -X POST -H "Content-Type: application/json" \
+-d '{"query": "{list{id,name,description,quality}}" }' \
+http://localhost:8010/graphql/item
 ```

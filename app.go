@@ -65,7 +65,6 @@ func (a *App) initializeRoutes() {
 				return
 			}
 			defer r.Body.Close()
-			log.Println("bodyJson: ", bodyJson)
 
 			query = bodyJson["query"].(string)
 		} else {

@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 )
 
 type item struct {
@@ -32,9 +33,21 @@ func (i *item) updateItem(db *sql.DB) error {
 }
 
 func (i *item) deleteItem(db *sql.DB) error {
-	_, err := db.Exec("DELETE FROM items WHERE id=$1", i.ID)
+	res, err := db.Exec("DELETE FROM items WHERE id=$1", i.ID)
 
-	return err
+	if err != nil {
+		return err
+	}
+
+	count, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if count == 0 {
+		return errors.New("no item exists with that ID")
+	}
+
+	return nil
 }
 
 func getItems(db *sql.DB) ([]item, error) {

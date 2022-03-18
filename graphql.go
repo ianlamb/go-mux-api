@@ -33,7 +33,7 @@ var queryType = graphql.NewObject(
 		Name: "Query",
 		Fields: graphql.Fields{
 			/* Get (read) single item by id
-			   http://localhost:8010/item?query={item(id:1){name,description,quality}}
+			   http://localhost:8010/graphql/item?query={item(id:1){name,description,quality}}
 			*/
 			"item": &graphql.Field{
 				Type:        itemType,
@@ -74,12 +74,123 @@ var queryType = graphql.NewObject(
 	},
 )
 
-// implement mutation types here (create/update/delete)
+var mutationType = graphql.NewObject(graphql.ObjectConfig{
+	Name: "Mutation",
+	Fields: graphql.Fields{
+		/* Create new item
+		http://localhost:8010/graphql/item?query=mutation{create(name:"Crowbar",description:"Deal +75% (+75% per stack) damage to enemies above 90% health.",quality:"common"){id,name,description,quality}}
+		*/
+		"create": &graphql.Field{
+			Type:        itemType,
+			Description: "Create new item",
+			Args: graphql.FieldConfigArgument{
+				"name": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.String),
+				},
+				"description": &graphql.ArgumentConfig{
+					Type: graphql.String,
+				},
+				"quality": &graphql.ArgumentConfig{
+					Type: graphql.String,
+				},
+			},
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				db := p.Context.Value("db").(*sql.DB)
+				i := item{
+					Name:        p.Args["name"].(string),
+					Description: p.Args["description"].(string),
+					Quality:     p.Args["quality"].(string),
+				}
+				err := i.createItem(db)
+				if err != nil {
+					return nil, err
+				}
+				return i, nil
+			},
+		},
+		/* Update item by id
+		http://localhost:8010/graphql/item?query=mutation{update(id:1,quality:"white"){id,name,description,quality}}
+		*/
+		"update": &graphql.Field{
+			Type:        itemType,
+			Description: "Update item by id",
+			Args: graphql.FieldConfigArgument{
+				"id": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.Int),
+				},
+				"name": &graphql.ArgumentConfig{
+					Type: graphql.String,
+				},
+				"description": &graphql.ArgumentConfig{
+					Type: graphql.String,
+				},
+				"quality": &graphql.ArgumentConfig{
+					Type: graphql.String,
+				},
+			},
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				db := p.Context.Value("db").(*sql.DB)
+				id, _ := p.Args["id"].(int)
+				i := item{
+					ID: id,
+				}
+				err := i.getItem(db)
+				if err != nil {
+					return nil, err
+				}
+
+				name, nameOk := p.Args["name"].(string)
+				if nameOk {
+					i.Name = name
+				}
+				description, descriptionOk := p.Args["description"].(string)
+				if descriptionOk {
+					i.Description = description
+				}
+				quality, qualityOk := p.Args["quality"].(string)
+				if qualityOk {
+					i.Quality = quality
+				}
+
+				err = i.updateItem(db)
+				if err != nil {
+					return nil, err
+				}
+				return i, nil
+			},
+		},
+		/* Delete item by id
+		http://localhost:8010/graphql/item?query=mutation{delete(id:1){id,name,description,quality}}
+		*/
+		"delete": &graphql.Field{
+			Type:        itemType,
+			Description: "Delete item by id",
+			Args: graphql.FieldConfigArgument{
+				"id": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.Int),
+				},
+			},
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				db := p.Context.Value("db").(*sql.DB)
+				id, _ := p.Args["id"].(int)
+				i := item{
+					ID: id,
+				}
+
+				err := i.deleteItem(db)
+				if err != nil {
+					return nil, err
+				}
+				return i, nil
+			},
+		},
+	},
+})
 
 var schema, _ = graphql.NewSchema(
 	graphql.SchemaConfig{
-		Query: queryType,
-		//Mutation: mutationType,
+		Query:    queryType,
+		Mutation: mutationType,
 	},
 )
 

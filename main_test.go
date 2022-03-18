@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"github.com/ianlamb/go-mux-api"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -20,16 +19,9 @@ func TestMain(m *testing.M) {
 		os.Getenv("POSTGRES_PASSWORD"),
 		os.Getenv("POSTGRES_DB"))
 
-	ensureTableExists()
 	code := m.Run()
 	clearTable()
 	os.Exit(code)
-}
-
-func ensureTableExists() {
-	if _, err := a.DB.Exec(tableCreationQuery); err != nil {
-		log.Fatal(err)
-	}
 }
 
 func clearTable() {
@@ -62,15 +54,6 @@ func checkResponseCode(t *testing.T, expected, actual int) {
 		t.Errorf("Expected response code %d. Got %d\n", expected, actual)
 	}
 }
-
-const tableCreationQuery = `CREATE TABLE IF NOT EXISTS items
-(
-    id SERIAL,
-    name TEXT NOT NULL,
-    description TEXT NOT NULL,
-	quality TEXT NOT NULL,
-    CONSTRAINT products_pkey PRIMARY KEY (id)
-)`
 
 func TestEmptyTable(t *testing.T) {
 	clearTable()
